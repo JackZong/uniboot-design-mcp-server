@@ -1,16 +1,76 @@
 # UniBoot Design MCP Server
 
-**Official remote MCP server for UniBoot Design** — a cloud-hosted bridge that gives Cursor and other AI tools secure, real-time access to your design files, artboards, tokens, PRDs, and code-from-design workflows.
+Official remote MCP server for UniBoot Design. It gives Cursor and other AI tools secure, real-time access to design files, artboards, tokens, PRDs, and design-to-code workflows.
 
-Auth: **OAuth 2.1** (same model as [Atlassian MCP Server](https://github.com/atlassian/atlassian-mcp-server)) or PAT · Hosting: UniBoot Cloud · Transport: Streamable HTTP
+- **Auth:** OAuth 2.1
+- **Hosting:** UniBoot Cloud
+- **Transport:** Streamable HTTP
 
 ## One-click setup
 
-[**Add to Cursor**](https://cursor.com/en/install-mcp?name=UniBoot-Design&config=eyJ1cmwiOiJodHRwczovL21jcC51YmQucGF4Y3EuY29tL21jcCJ9)
+Pick your AI client below to install the official UniBoot Design MCP Server. Each button uses your client's native install link, so you don't need to edit any JSON config by hand.
 
-或从 [Cursor Marketplace](https://cursor.com/marketplace) 搜索 **UniBoot Design** → **Add to Cursor**。装好后 Agent 会拉起浏览器授权，登录 UniBoot Design 账号并点 **接受**。
+<table>
+  <tr>
+    <td align="center" valign="top" width="25%">
+      <a href="https://cursor.com/en/install-mcp?name=UniBoot-Design&config=eyJ1cmwiOiJodHRwczovL21jcC51YmQucGF4Y3EuY29tL21jcCJ9">
+        <img src="assets/add-to-cursor.svg" alt="Add to Cursor" width="200" />
+      </a>
+      <br />
+      <a href="https://cursor.com/en/install-mcp?name=UniBoot-Design&config=eyJ1cmwiOiJodHRwczovL21jcC51YmQucGF4Y3EuY29tL21jcCJ9"><strong>Add to Cursor</strong></a>
+      <br />
+      <sub>Implement screens from UniBoot Design delivery links.</sub>
+    </td>
+    <td align="center" valign="top" width="25%">
+      <a href="https://vscode.dev/redirect/mcp/install?name=UniBoot-Design&config=%7B%22url%22%3A%22https%3A%2F%2Fmcp.ubd.paxcq.com%2Fmcp%22%2C%22type%22%3A%22http%22%7D">
+        <img src="assets/add-to-vscode.svg" alt="Add to VS Code" width="200" />
+      </a>
+      <br />
+      <a href="https://vscode.dev/redirect/mcp/install?name=UniBoot-Design&config=%7B%22url%22%3A%22https%3A%2F%2Fmcp.ubd.paxcq.com%2Fmcp%22%2C%22type%22%3A%22http%22%7D"><strong>Add to VS Code</strong></a>
+      <br />
+      <sub>Use design context in GitHub Copilot Chat.</sub>
+    </td>
+    <td align="center" valign="top" width="25%">
+      <a href="https://chatgpt.com/#settings">
+        <img src="assets/add-to-chatgpt.svg" alt="Add to ChatGPT" width="200" />
+      </a>
+      <br />
+      <a href="https://chatgpt.com/#settings"><strong>Add to ChatGPT</strong></a>
+      <br />
+      <sub>Add <code>https://mcp.ubd.paxcq.com/mcp</code> as a connector.</sub>
+    </td>
+    <td align="center" valign="top" width="25%">
+      <a href="https://claude.ai/settings/connectors">
+        <img src="assets/add-to-claude.svg" alt="Add to Claude" width="200" />
+      </a>
+      <br />
+      <a href="https://claude.ai/settings/connectors"><strong>Add to Claude</strong></a>
+      <br />
+      <sub>Connect the remote MCP server, then complete OAuth.</sub>
+    </td>
+  </tr>
+</table>
 
-手动配置：
+After install, sign in when the client starts the UniBoot Design authorization flow. No API tokens to paste.
+
+### Let your agent do the setup
+
+```
+Set up UniBoot Design MCP using https://mcp.ubd.paxcq.com/mcp.
+Then start the UniBoot Design authentication flow so I can sign in.
+```
+
+Or add it with your client's own command:
+
+| Client | Command or configuration |
+| --- | --- |
+| Cursor | Marketplace / **Add to Cursor**, or the button above |
+| VS Code | Extensions → `@mcp UniBoot Design`, or the button above |
+| Claude Code | `claude mcp add --transport http uniboot-design https://mcp.ubd.paxcq.com/mcp` |
+| Codex | `codex mcp add uniboot-design --url https://mcp.ubd.paxcq.com/mcp` |
+| Any other MCP client | Server URL `https://mcp.ubd.paxcq.com/mcp` |
+
+Manual `mcp.json`:
 
 ```json
 {
@@ -22,87 +82,78 @@ Auth: **OAuth 2.1** (same model as [Atlassian MCP Server](https://github.com/atl
 }
 ```
 
-不要再填 `UBD_PAT`。Cursor 会按 MCP 规范自动走 OAuth 2.1（PKCE + Dynamic Client Registration）。
+Cursor discovers OAuth 2.1 (PKCE + Dynamic Client Registration) from the remote server.
 
-## 授权模式（对齐 Atlassian）
+## Authorization
 
-1. 客户端连接 `https://mcp.ubd.paxcq.com/mcp`，未带 token 时返回 **401** + `WWW-Authenticate`（RFC 9728）。
-2. 发现 `/.well-known/oauth-protected-resource` 与 `/.well-known/oauth-authorization-server`。
-3. 浏览器打开 `/authorize`：登录 UniBoot Design → 选择团队 → 勾选 Read / Write / Search → **接受**。
-4. 回调 Cursor（`http://localhost:8787/callback` 或 `https://www.cursor.com/agents/mcp/oauth/callback`）。
-5. 之后每次 tool 调用都用你的账号权限（内部签发 PAT，API 侧权限不变）。
+1. The client connects to `https://mcp.ubd.paxcq.com/mcp`. Requests without a token receive **401** plus `WWW-Authenticate` (RFC 9728).
+2. The client reads `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server`.
+3. The browser opens `/authorize`. The user signs in, picks a team, selects Read / Write / Search, and accepts.
+4. The client is redirected to its OAuth callback (Cursor desktop uses `http://localhost:8787/callback`).
+5. Tool calls run with that user's existing UniBoot Design permissions.
 
-无头 / CI 仍可用 PAT：
+## Repository layout
 
-```http
-Authorization: Bearer ubd_pat_...
-```
-
-## 仓库结构（Atlassian 同款打包）
-
-| 格式 | 清单 | 内容 |
+| Format | Manifest | Contents |
 | --- | --- | --- |
-| Cursor Plugin | `.cursor-plugin/plugin.json` + `.mcp.json` | skills / rules / commands |
-| Agent Plugins | `plugin.json` + `mcp.json` | 可移植 skills + MCP |
-| MCP Registry | `server.json` | 远程端点元数据 |
-| 本仓库 `src/` | HTTP MCP + OAuth AS | 部署到 `mcp.ubd.paxcq.com` |
+| Cursor Plugin | `.cursor-plugin/plugin.json` + `.mcp.json` | skills, rules, commands |
+| Agent Plugins | `plugin.json` + `mcp.json` | portable skills + MCP |
+| MCP Registry | `server.json` | remote endpoint metadata |
+| `src/` | HTTP MCP + OAuth authorization server | deployed at `mcp.ubd.paxcq.com` |
 
-## 本地开发
+## Local development
 
 ```bash
 cp .env.example .env
-# 确保 UniBoot Design API 已在 :8060 运行
-pnpm install
-pnpm dev          # http://localhost:8070/mcp
+# UniBoot Design API should already be running on :8060
+npm install
+npm run dev          # http://localhost:8070/mcp
 ```
 
-健康检查：`curl -s http://localhost:8070/health`
+Health check: `curl -s http://localhost:8070/health`
 
-OAuth 发现：
+OAuth discovery:
 
 ```bash
 curl -s http://localhost:8070/.well-known/oauth-protected-resource
 curl -s http://localhost:8070/.well-known/oauth-authorization-server
 ```
 
-环境变量：
-
-| 变量 | 说明 |
+| Variable | Description |
 | --- | --- |
-| `UBD_API_BASE` | API，默认 `http://localhost:8060/api/v1` |
-| `UBD_WEB_BASE` | 交付台，默认 `http://localhost:5173` |
-| `MCP_PUBLIC_URL` | 对外 issuer / resource，生产为 `https://mcp.ubd.paxcq.com` |
-| `MCP_PORT` | 默认 `8070` |
-| `MCP_ALLOWED_HOSTS` | 生产设为 `mcp.ubd.paxcq.com` |
-| `UBD_PAT` | 可选，跳过 OAuth 的本地 fallback |
+| `UBD_API_BASE` | API base URL. Default `http://localhost:8060/api/v1` |
+| `UBD_WEB_BASE` | Web app URL. Default `http://localhost:5173` |
+| `MCP_PUBLIC_URL` | Public issuer / resource URL. Production: `https://mcp.ubd.paxcq.com` |
+| `MCP_PORT` | Default `8070` |
+| `MCP_ALLOWED_HOSTS` | Production: `mcp.ubd.paxcq.com` |
 
-## 工具
+## Tools
 
-主入口：`open_delivery`。像素验收：`compare_design_code`（必须带 screenshot + implementedSource）。
+Primary entry: `open_delivery`. Pixel QA: `compare_design_code` (requires `screenshot` and `implementedSource`).
 
-其它：`list_artboards` · `get_design_page` · `get_artboard_preview` · `export_artboard_assets` · `generate_prototype` · `generate_design` · `plan_canvas_ops` · `apply_canvas_ops` · `list_prds` · `get_prd` …
+Also available: `list_artboards` · `get_design_page` · `get_artboard_preview` · `export_artboard_assets` · `generate_prototype` · `generate_design` · `plan_canvas_ops` · `apply_canvas_ops` · `list_prds` · `get_prd`
 
-用户只需贴交付链接并说「落地 / 对齐设计」。Skill / Rule 会让 Agent 自动调用工具。
+Users only need to paste a delivery URL and ask to implement or match the design. Skills and rules make the agent call the right tools.
 
-## 发布到 Cursor Marketplace
+## Publish to the Cursor Marketplace
 
-1. 把本仓库推到**公开** Git 仓库（GitHub 等）。
-2. 确认 `.cursor-plugin/plugin.json`、`.mcp.json`、logo、README 齐全。
-3. 打开 [cursor.com/marketplace/publish](https://cursor.com/marketplace/publish) 提交仓库链接。
-4. 审核通过后，用户在 Customize / Marketplace 一键安装并完成 OAuth。
+1. Push this repository to a **public** Git host.
+2. Confirm `.cursor-plugin/plugin.json`, `.mcp.json`, the logo, and this README are present.
+3. Submit the repository URL at [cursor.com/marketplace/publish](https://cursor.com/marketplace/publish).
+4. After review, users install from Customize / Marketplace and complete OAuth.
 
-本地预览插件（不上架）：
+Preview locally without publishing:
 
 ```bash
 mkdir -p ~/.cursor/plugins/local
 ln -sfn "$(pwd)" ~/.cursor/plugins/local/uniboot-design
 ```
 
-然后 **Developer: Reload Window**。
+Then run **Developer: Reload Window**.
 
-## 部署
+## Deploy
 
-生产 MCP 地址：`https://mcp.ubd.paxcq.com/mcp`。用仓库根目录 `Dockerfile` 构建，并设置：
+Production MCP URL: `https://mcp.ubd.paxcq.com/mcp`. Build with the root `Dockerfile` and set:
 
 ```
 UBD_API_BASE=http://api:8060/api/v1
@@ -111,10 +162,7 @@ MCP_ALLOWED_HOSTS=mcp.ubd.paxcq.com
 UBD_WEB_BASE=https://ubd.paxcq.com
 ```
 
-OAuth 回调必须允许：
-
-- `http://localhost:8787/callback`（Cursor 桌面）
-- `https://www.cursor.com/agents/mcp/oauth/callback`（Cursor Web / Agents）
+Allowed OAuth redirect URIs include loopback callbacks and official client hosts (Cursor, VS Code, Claude, ChatGPT).
 
 ## License
 

@@ -22,9 +22,11 @@ describe('pkce / redirects / scopes', () => {
     expect(verifyS256('nope', challenge)).toBe(false)
   })
 
-  it('allows Cursor and loopback redirects only', () => {
+  it('allows official AI client and loopback redirects', () => {
     expect(isAllowedRedirectUri('http://localhost:8787/callback')).toBe(true)
     expect(isAllowedRedirectUri('https://www.cursor.com/agents/mcp/oauth/callback')).toBe(true)
+    expect(isAllowedRedirectUri('https://claude.ai/api/mcp/auth_callback')).toBe(true)
+    expect(isAllowedRedirectUri('https://chatgpt.com/aip/mcp/oauth/callback')).toBe(true)
     expect(isAllowedRedirectUri('https://evil.example/callback')).toBe(false)
   })
 

@@ -24,9 +24,9 @@ const ErrorCode = {
 } as const
 
 const ErrorMessage: Record<number, string> = {
-  [ErrorCode.UNAUTHORIZED]: 'Unauthorized: missing or invalid token (PAT / JWT)',
+  [ErrorCode.UNAUTHORIZED]: 'Unauthorized: missing or invalid OAuth token',
   [ErrorCode.FORBIDDEN]:
-    'Forbidden: your PAT does not have access to this team or project. Ask a team owner to invite you, or use a token from the correct team.',
+    'Forbidden: your account does not have access to this team or project. Ask a team owner to invite you.',
   [ErrorCode.NOT_FOUND]: 'Not found: resource does not exist or is not visible to your account',
   [ErrorCode.VALIDATION]: 'Validation failed: check request parameters',
   [ErrorCode.INTERNAL]: 'Internal server error',
@@ -41,7 +41,7 @@ function mapApiError(code: number, message?: string): ApiError {
   if (code === ErrorCode.FORBIDDEN) {
     return new ApiError(
       code,
-      text.includes('PAT') || text.includes('team') ? text : ErrorMessage[ErrorCode.FORBIDDEN]!,
+      text.includes('team') || text.includes('account') ? text : ErrorMessage[ErrorCode.FORBIDDEN]!,
     )
   }
   return new ApiError(code, text)

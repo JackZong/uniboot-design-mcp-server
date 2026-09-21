@@ -1,11 +1,11 @@
 # UniBoot Design MCP skills
 
-这些 skill 面向远程 MCP 端点 `https://mcp.ubd.paxcq.com/mcp`。Cursor / Agent Plugins 会按 `skills/<name>/SKILL.md` 自动发现。
+These skills target the remote MCP endpoint `https://mcp.ubd.paxcq.com/mcp`. Cursor / Agent Plugins discover them from `skills/<name>/SKILL.md`.
 
-| Skill | 何时使用 |
+| Skill | When to use |
 | --- | --- |
-| `uniboot-design` | 用户粘贴交付链接，或说落地 / 对齐设计 |
-| `generate-prototype` | 用 MCP 生成可预览原型 |
-| `generate-design` | 用 MCP 生成设计图 |
+| `uniboot-design` | User pastes a delivery URL or asks to implement / match a design |
+| `generate-prototype` | Generate a previewable prototype via MCP |
+| `generate-design` | Generate a design mock via MCP |
 
-授权使用 **OAuth 2.1**（与 Atlassian MCP 相同：连接时浏览器同意）。无头环境可改用 PAT：`Authorization: Bearer ubd_pat_...`。
+Auth is **OAuth 2.1**. The client opens a browser consent screen on first connect.

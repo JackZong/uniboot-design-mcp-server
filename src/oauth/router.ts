@@ -59,7 +59,7 @@ export function createOAuthRouter(): Router {
       if (!redirectUris.every(isAllowedRedirectUri)) {
         res.status(400).json({
           error: 'invalid_redirect_uri',
-          error_description: 'Only loopback and Cursor OAuth callback URIs are allowed',
+          error_description: 'Only loopback and official AI client callback URIs are allowed',
         })
         return
       }

@@ -1927,7 +1927,7 @@ export function registerTools(server: McpServer, getToken: TokenProvider) {
     teamId: z
       .string()
       .optional()
-      .describe('Team for a new project. Defaults to the PAT owner’s first team.'),
+      .describe('Team for a new project. Defaults to the signed-in user’s first team.'),
     type: z
       .enum(['mobile', 'admin', 'screen', 'asset', 'concept_map', 'spec_review', 'showcase'])
       .optional()

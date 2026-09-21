@@ -1,7 +1,12 @@
-const CURSOR_CALLBACKS = new Set([
-  'http://localhost:8787/callback',
-  'https://www.cursor.com/agents/mcp/oauth/callback',
-  'https://cursor.com/agents/mcp/oauth/callback',
+const OFFICIAL_HTTPS_HOSTS = new Set([
+  'cursor.com',
+  'www.cursor.com',
+  'claude.ai',
+  'claude.com',
+  'chatgpt.com',
+  'platform.openai.com',
+  'vscode.dev',
+  'insiders.vscode.dev',
 ])
 
 export function isAllowedRedirectUri(uri: string): boolean {
@@ -12,7 +17,9 @@ export function isAllowedRedirectUri(uri: string): boolean {
     return false
   }
   if (parsed.username || parsed.password || parsed.hash) return false
-  if (CURSOR_CALLBACKS.has(uri)) return true
+  if (parsed.protocol === 'https:' && OFFICIAL_HTTPS_HOSTS.has(parsed.hostname.toLowerCase())) {
+    return true
+  }
   if (parsed.protocol === 'http:' && isLoopbackHost(parsed.hostname)) return true
   if (parsed.protocol === 'https:' && isLoopbackHost(parsed.hostname)) return true
   return false

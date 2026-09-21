@@ -33,10 +33,9 @@ export function startHttpServer() {
   })
 
   const sessions = new Map<string, Session>()
-  const fallbackPat = process.env.UBD_PAT ?? ''
 
   function resolveToken(req: Request, existing?: string): string {
-    return extractBearer(req.headers.authorization) || existing || fallbackPat
+    return extractBearer(req.headers.authorization) || existing || ''
   }
 
   app.use(createOAuthRouter())
@@ -75,7 +74,7 @@ export function startHttpServer() {
             error: {
               code: -32001,
               message:
-                'Unauthorized: complete OAuth 2.1 (or send Authorization: Bearer <UBD_PAT>)',
+                'Unauthorized: complete the OAuth 2.1 sign-in flow',
             },
             id: null,
           })
@@ -105,7 +104,7 @@ export function startHttpServer() {
         return
       }
 
-      if (!extractBearer(req.headers.authorization) && !fallbackPat) {
+      if (!extractBearer(req.headers.authorization)) {
         res.setHeader('WWW-Authenticate', wwwAuthenticate('invalid_token', 'Missing bearer token'))
         res.status(401).json({
           jsonrpc: '2.0',

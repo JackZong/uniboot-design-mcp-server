@@ -341,7 +341,7 @@ export async function ensureGenerateProject(opts: {
       return {
         ok: false as const,
         code: 42200,
-        message: '暂无可用团队：PAT 未加入任何团队，或请传入 teamId',
+        message: '暂无可用团队：当前账号未加入任何团队，或请传入 teamId',
       }
     }
     const created = await opts.api<{ id: string }>(opts.token, '/projects', {

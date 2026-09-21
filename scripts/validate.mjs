@@ -28,7 +28,7 @@ mustJson('.mcp.json', (j) => {
   const url = j.mcpServers?.['uniboot-design']?.url
   if (!url || !url.startsWith('https://')) errors.push('.mcp.json must use https remote MCP url')
   if (j.mcpServers?.['uniboot-design']?.headers) {
-    errors.push('.mcp.json must not ship PAT headers (OAuth only)')
+    errors.push('.mcp.json must not ship Authorization headers (OAuth only)')
   }
 })
 mustJson('mcp.json')
