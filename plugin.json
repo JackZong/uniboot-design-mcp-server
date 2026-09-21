@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "uniboot-design",
+  "version": "1.0.0",
+  "description": "Connect AI agents to UniBoot Design — pixel-accurate design-to-code, prototypes, and design QA, with reusable skills.",
+  "author": {
+    "name": "UniBoot",
+    "url": "https://ubd.paxcq.com"
+  },
+  "homepage": "https://ubd.paxcq.com",
+  "license": "Apache-2.0",
+  "keywords": [
+    "uniboot",
+    "design",
+    "mcp",
+    "codegen",
+    "prototype",
+    "ui"
+  ]
+}

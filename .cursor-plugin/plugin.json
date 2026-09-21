@@ -1,0 +1,18 @@
+{
+  "name": "uniboot-design",
+  "displayName": "UniBoot Design MCP",
+  "description": "UniBoot Design plugin for Cursor with MCP and skills for pixel-accurate design-to-code, prototypes, and design QA.",
+  "version": "1.0.0",
+  "author": {
+    "name": "UniBoot",
+    "url": "https://ubd.paxcq.com"
+  },
+  "homepage": "https://ubd.paxcq.com",
+  "license": "Apache-2.0",
+  "keywords": ["uniboot", "design", "mcp", "codegen", "ui", "skills"],
+  "logo": "assets/logo.svg",
+  "skills": "./skills/",
+  "rules": "./rules/",
+  "commands": "./commands/",
+  "mcpServers": "./.mcp.json"
+}

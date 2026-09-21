@@ -1,0 +1,14 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.uniboot/uniboot-design-mcp-server",
+  "description": "Connect to UniBoot Design to implement screens from delivery links, generate prototypes, and compare pixels.",
+  "title": "UniBoot Design MCP Server",
+  "version": "1.0.0",
+  "websiteUrl": "https://ubd.paxcq.com",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.ubd.paxcq.com/mcp"
+    }
+  ]
+}

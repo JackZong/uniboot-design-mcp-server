@@ -1,0 +1,25 @@
+---
+description: >-
+  User pastes UniBoot Design URL or asks to 落地/实现/对齐设计 — even without naming
+  any tool. Agent MUST auto-call open_delivery first; obey gate.pixelChecklist;
+  apply keySpecs.relative/layoutIntent; finish with compare_design_code +
+  screenshot + implementedSource.
+alwaysApply: true
+---
+
+# UniBoot Design：像素级交付
+
+用户只贴链接 / 说「落地、对齐设计」。Agent **自动**：
+
+1. 读 `uniboot-design.json`（若有）→ `open_delivery({ link, config, packageJson })` → **先读 `data.gate`**
+2. 遵守 `structureContract` + **逐项勾选 `pixelChecklist.acceptance`**
+3. 写 toolbar/footer **之前**看 `keySpecs.relative` / `box.x/y` / `layoutIntent`
+4. **按 `cssHints` 写尺寸/间距/圆角/色值**（禁止凭 EP 默认猜）
+5. `export_artboard_assets({ mode: "icons", nodeIds: keySpecs.iconNodeIds })` → `get_assets`
+6. 手写后 **必须** `compare_design_code`：带 **screenshot** + **implementedSource**
+7. 验收与设计稿**同一产品态**（看 `gate.acceptanceState`）
+
+**禁止**要求用户写工具名。  
+**禁止**合成单白壳 / 默认 `space-between` / 无 fill 的 sticky 白底 footer。  
+**禁止**未带 `confirmScaffold=true` 就把 `execute_code_plan` 当终稿。  
+**禁止**用通用图标顶替切图、跳过截图或跳过 implementedSource。

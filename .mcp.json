@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "uniboot-design": {
+      "type": "http",
+      "url": "https://mcp.ubd.paxcq.com/mcp"
+    }
+  }
+}
