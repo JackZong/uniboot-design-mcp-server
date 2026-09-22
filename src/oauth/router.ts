@@ -35,18 +35,19 @@ export function createOAuthRouter(): Router {
     next()
   })
 
-  router.get('/.well-known/oauth-authorization-server', (_req, res) => {
+  const sendAs = (_req: Request, res: Response) => {
     res.json(authorizationServerMetadata())
-  })
-  router.get('/.well-known/oauth-authorization-server/mcp', (_req, res) => {
-    res.json(authorizationServerMetadata())
-  })
-  router.get('/.well-known/oauth-protected-resource', (_req, res) => {
+  }
+  const sendPr = (_req: Request, res: Response) => {
     res.json(protectedResourceMetadata())
-  })
-  router.get('/.well-known/oauth-protected-resource/mcp', (_req, res) => {
-    res.json(protectedResourceMetadata())
-  })
+  }
+
+  router.get('/.well-known/oauth-authorization-server', sendAs)
+  router.get('/.well-known/oauth-authorization-server/mcp', sendAs)
+  router.get('/.well-known/openid-configuration', sendAs)
+  router.get('/.well-known/openid-configuration/mcp', sendAs)
+  router.get('/.well-known/oauth-protected-resource', sendPr)
+  router.get('/.well-known/oauth-protected-resource/mcp', sendPr)
 
   router.post('/register', async (req, res) => {
     try {

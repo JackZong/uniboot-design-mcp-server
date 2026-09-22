@@ -10,7 +10,9 @@ export function getPublicBase() {
 }
 
 export function getIssuer() {
-  return getPublicBase()
+  // Path-aware issuer so AS discovery prefers /mcp/.well-known/* when
+  // reverse proxies intercept origin /.well-known for ACME.
+  return `${getPublicBase()}/mcp`
 }
 
 export function getResourceUrl() {
@@ -19,12 +21,13 @@ export function getResourceUrl() {
 
 export function authorizationServerMetadata() {
   const issuer = getIssuer()
+  const origin = getPublicBase()
   return {
     issuer,
-    authorization_endpoint: `${issuer}/authorize`,
-    token_endpoint: `${issuer}/token`,
-    registration_endpoint: `${issuer}/register`,
-    revocation_endpoint: `${issuer}/revoke`,
+    authorization_endpoint: `${origin}/authorize`,
+    token_endpoint: `${origin}/token`,
+    registration_endpoint: `${origin}/register`,
+    revocation_endpoint: `${origin}/revoke`,
     scopes_supported: [...DEFAULT_SCOPES],
     response_types_supported: ['code'],
     response_modes_supported: ['query'],
@@ -52,7 +55,9 @@ export function protectedResourceMetadata() {
 }
 
 export function wwwAuthenticate(error?: string, description?: string) {
-  const metadata = `${getPublicBase()}/.well-known/oauth-protected-resource`
+  // Prefer /mcp/.well-known so discovery still works when a reverse proxy
+  // intercepts origin /.well-known (common 宝塔 / ACME configs).
+  const metadata = `${getPublicBase()}/mcp/.well-known/oauth-protected-resource`
   const parts = [
     `Bearer realm="UniBoot Design"`,
     `resource_metadata="${metadata}"`,

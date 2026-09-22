@@ -38,7 +38,10 @@ export function startHttpServer() {
     return extractBearer(req.headers.authorization) || existing || ''
   }
 
-  app.use(createOAuthRouter())
+  const oauth = createOAuthRouter()
+  app.use(oauth)
+  // Path-aware discovery: /mcp/.well-known/* and /mcp/register (RFC 8414 / OIDC style).
+  app.use('/mcp', oauth)
   app.use('/assets', express.static(assetsDir))
 
   app.get('/health', (_req, res) => {

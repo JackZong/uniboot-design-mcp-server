@@ -164,6 +164,8 @@ UBD_WEB_BASE=https://ubd.paxcq.com
 
 Allowed OAuth redirect URIs include loopback callbacks and official client hosts (Cursor, VS Code, Claude, ChatGPT).
 
+After deploy, `GET /health` must include `"auth":"oauth2.1"`. If Cursor logs `Cannot POST /register`, the public MCP container is still the old PAT image — rebuild `ubd-mcp` from this repo and `up mcp`. If `/.well-known/oauth-*` returns HTML `404.html`, the reverse proxy is intercepting ACME `/.well-known`; only `/.well-known/acme-challenge/` should be static, everything else must proxy to MCP.
+
 ## License
 
 Apache-2.0

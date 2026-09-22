@@ -38,7 +38,9 @@ describe('pkce / redirects / scopes', () => {
 
 describe('oauth http', () => {
   const app = express()
-  app.use(createOAuthRouter())
+  const oauth = createOAuthRouter()
+  app.use(oauth)
+  app.use('/mcp', oauth)
   const server = createServer(app)
   let base = ''
 
@@ -60,10 +62,29 @@ describe('oauth http', () => {
     expect(as.authorization_endpoint).toContain('/authorize')
     expect(as.code_challenge_methods_supported).toContain('S256')
     expect(as.registration_endpoint).toContain('/register')
+
+    const prMcp = await fetch(`${base}/mcp/.well-known/oauth-protected-resource`).then((r) => r.json())
+    const asMcp = await fetch(`${base}/mcp/.well-known/oauth-authorization-server`).then((r) => r.json())
+    const oidcMcp = await fetch(`${base}/mcp/.well-known/openid-configuration`).then((r) => r.json())
+    expect(prMcp.resource).toContain('/mcp')
+    expect(prMcp.authorization_servers[0]).toContain('/mcp')
+    expect(asMcp.registration_endpoint).toContain('/register')
+    expect(asMcp.issuer).toContain('/mcp')
+    expect(oidcMcp.authorization_endpoint).toContain('/authorize')
   })
 
   it('registers a public client and completes PKCE token exchange', async () => {
     const { verifier, challenge } = pkce()
+    const mcpRegistered = await fetch(`${base}/mcp/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_name: 'Cursor',
+        redirect_uris: ['http://localhost:8787/callback'],
+      }),
+    })
+    expect(mcpRegistered.status).toBe(201)
+
     const registered = await fetch(`${base}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
