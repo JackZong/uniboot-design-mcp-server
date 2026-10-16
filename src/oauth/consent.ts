@@ -169,7 +169,6 @@ export function renderConsentPage(opts: {
       flex-shrink: 0;
     }
     .app-icon {
-      background: #000;
       color: #fff;
       font-size: 22px;
       font-weight: 700;
