@@ -56,6 +56,12 @@ After install, sign in when the client starts the UniBoot Design authorization f
 
 ### Let your agent do the setup
 
+Forward this to a teammate (Chinese or English):
+
+```
+请配置 UniBoot Design MCP，地址用 https://mcp.ubd.paxcq.com/mcp，并启动授权流程让我登录。
+```
+
 ```
 Set up UniBoot Design MCP using https://mcp.ubd.paxcq.com/mcp.
 Then start the UniBoot Design authentication flow so I can sign in.
@@ -71,7 +77,7 @@ Or add it with your client's own command:
 | Codex | `codex mcp add uniboot-design --url https://mcp.ubd.paxcq.com/mcp` |
 | Any other MCP client | Server URL `https://mcp.ubd.paxcq.com/mcp` |
 
-Manual `mcp.json` (OAuth):
+Manual `mcp.json` (OAuth — recommended; no token in the file):
 
 ```json
 {
@@ -95,7 +101,7 @@ Skip OAuth with a Personal Access Token in the URL (same shape as Penpot `userTo
 }
 ```
 
-Cursor discovers OAuth 2.1 (PKCE + Dynamic Client Registration) from the remote server.
+Cursor discovers OAuth 2.1 (PKCE + Dynamic Client Registration) from the remote server. In Settings → MCP, **Authenticate** only appears when the status is **Needs authentication**. If you see **Error**, fix the connection (wrong host, network, or server metadata) first — there will be no auth button until the client can reach DCR / authorize.
 
 ## Authorization
 

@@ -6,6 +6,7 @@ import { createOAuthRouter } from './router.js'
 import { oauthStore } from './store.js'
 import { sha256Base64Url, verifyS256 } from './pkce.js'
 import { isAllowedRedirectUri } from './redirects.js'
+import { authorizeReturnUrl, isSafeAuthorizeReturn } from './router.js'
 import { parseScopes } from './scopes.js'
 
 function pkce() {
@@ -25,14 +26,30 @@ describe('pkce / redirects / scopes', () => {
   it('allows official AI client and loopback redirects', () => {
     expect(isAllowedRedirectUri('http://localhost:8787/callback')).toBe(true)
     expect(isAllowedRedirectUri('https://www.cursor.com/agents/mcp/oauth/callback')).toBe(true)
+    expect(isAllowedRedirectUri('cursor://anysphere.cursor-mcp/oauth/callback')).toBe(true)
     expect(isAllowedRedirectUri('https://claude.ai/api/mcp/auth_callback')).toBe(true)
     expect(isAllowedRedirectUri('https://chatgpt.com/aip/mcp/oauth/callback')).toBe(true)
     expect(isAllowedRedirectUri('https://evil.example/callback')).toBe(false)
+    expect(isAllowedRedirectUri('cursor://evil/oauth/callback')).toBe(false)
   })
 
   it('defaults scopes to read write search', () => {
     expect(parseScopes('')).toEqual(['read', 'write', 'search'])
     expect(parseScopes('read write')).toEqual(['read', 'write'])
+  })
+
+  it('only allows SSO return to this host /authorize', () => {
+    const ok = authorizeReturnUrl({
+      client_id: 'c1',
+      redirect_uri: 'http://localhost:8787/callback',
+      response_type: 'code',
+      code_challenge: 'x',
+      code_challenge_method: 'S256',
+    })
+    expect(isSafeAuthorizeReturn(ok)).toBe(true)
+    expect(isSafeAuthorizeReturn('https://evil.example/authorize')).toBe(false)
+    expect(isSafeAuthorizeReturn('http://localhost:8070/authorize/../token')).toBe(false)
+    expect(isSafeAuthorizeReturn('http://localhost:8070/token')).toBe(false)
   })
 })
 
@@ -57,20 +74,39 @@ describe('oauth http', () => {
 
   it('serves protected resource and AS metadata', async () => {
     const pr = await fetch(`${base}/.well-known/oauth-protected-resource`).then((r) => r.json())
-    const as = await fetch(`${base}/.well-known/oauth-authorization-server`).then((r) => r.json())
+    const as = (await fetch(`${base}/.well-known/oauth-authorization-server`).then((r) =>
+      r.json(),
+    )) as {
+      authorization_endpoint: string
+      code_challenge_methods_supported: string[]
+      registration_endpoint: string
+      jwks_uri: string
+      subject_types_supported: string[]
+      id_token_signing_alg_values_supported: string[]
+    }
     expect(pr.authorization_servers.length).toBeGreaterThan(0)
     expect(as.authorization_endpoint).toContain('/authorize')
     expect(as.code_challenge_methods_supported).toContain('S256')
     expect(as.registration_endpoint).toContain('/register')
+    expect(as.jwks_uri).toContain('/mcp/.well-known/jwks.json')
+    expect(as.subject_types_supported).toEqual(['public'])
+    expect(as.id_token_signing_alg_values_supported).toEqual(['RS256'])
 
     const prMcp = await fetch(`${base}/mcp/.well-known/oauth-protected-resource`).then((r) => r.json())
     const asMcp = await fetch(`${base}/mcp/.well-known/oauth-authorization-server`).then((r) => r.json())
     const oidcMcp = await fetch(`${base}/mcp/.well-known/openid-configuration`).then((r) => r.json())
+    const jwks = (await fetch(`${base}/mcp/.well-known/jwks.json`).then((r) => r.json())) as {
+      keys: Array<{ kid: string; kty: string; alg: string }>
+    }
     expect(prMcp.resource).toContain('/mcp')
     expect(prMcp.authorization_servers[0]).toContain('/mcp')
     expect(asMcp.registration_endpoint).toContain('/register')
     expect(asMcp.issuer).toContain('/mcp')
     expect(oidcMcp.authorization_endpoint).toContain('/authorize')
+    expect(oidcMcp.jwks_uri).toContain('/mcp/.well-known/jwks.json')
+    expect(jwks.keys[0]?.kty).toBe('RSA')
+    expect(jwks.keys[0]?.alg).toBe('RS256')
+    expect(jwks.keys[0]?.kid).toBe('ubd-mcp-1')
   })
 
   it('registers a public client and completes PKCE token exchange', async () => {
@@ -138,5 +174,23 @@ describe('oauth http', () => {
       }),
     })
     expect(res.status).toBe(400)
+  })
+
+  it('accepts Cursor DCR body with all three redirect URIs', async () => {
+    const res = await fetch(`${base}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_name: 'Cursor',
+        redirect_uris: [
+          'cursor://anysphere.cursor-mcp/oauth/callback',
+          'https://www.cursor.com/agents/mcp/oauth/callback',
+          'http://localhost:8787/callback',
+        ],
+      }),
+    })
+    expect(res.status).toBe(201)
+    const body = (await res.json()) as { redirect_uris: string[] }
+    expect(body.redirect_uris).toHaveLength(3)
   })
 })

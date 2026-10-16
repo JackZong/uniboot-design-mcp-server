@@ -6,10 +6,13 @@ import { isAllowedRedirectUri, redirectUrisMatch } from './redirects.js'
 import {
   authorizationServerMetadata,
   getIssuer,
+  getPublicBase,
   protectedResourceMetadata,
 } from './metadata.js'
+import { jwksDocument } from './jwks.js'
 import { renderConsentPage } from './consent.js'
-import { createMcpPat, listTeams, loginWithPassword } from './api-login.js'
+import { createMcpPat, fetchMe, listTeams, loginWithPassword } from './api-login.js'
+import { getWebBase } from '../api.js'
 import { DEFAULT_SCOPES, parseScopes, formatScopes, type ScopeId } from './scopes.js'
 import { oauthStore, type OAuthClient } from './store.js'
 
@@ -41,6 +44,9 @@ export function createOAuthRouter(): Router {
   const sendPr = (_req: Request, res: Response) => {
     res.json(protectedResourceMetadata())
   }
+  const sendJwks = (_req: Request, res: Response) => {
+    res.json(jwksDocument())
+  }
 
   router.get('/.well-known/oauth-authorization-server', sendAs)
   router.get('/.well-known/oauth-authorization-server/mcp', sendAs)
@@ -48,6 +54,8 @@ export function createOAuthRouter(): Router {
   router.get('/.well-known/openid-configuration/mcp', sendAs)
   router.get('/.well-known/oauth-protected-resource', sendPr)
   router.get('/.well-known/oauth-protected-resource/mcp', sendPr)
+  // Root mount → /.well-known/jwks.json; /mcp mount → /mcp/.well-known/jwks.json
+  router.get('/.well-known/jwks.json', sendJwks)
 
   router.post('/register', async (req, res) => {
     try {
@@ -57,10 +65,11 @@ export function createOAuthRouter(): Router {
         res.status(400).json({ error: 'invalid_client_metadata', error_description: 'redirect_uris required' })
         return
       }
-      if (!redirectUris.every(isAllowedRedirectUri)) {
+      const rejected = redirectUris.filter((u) => !isAllowedRedirectUri(u))
+      if (rejected.length) {
         res.status(400).json({
           error: 'invalid_redirect_uri',
-          error_description: 'Only loopback and official AI client callback URIs are allowed',
+          error_description: `Only loopback and official AI client callback URIs are allowed (rejected: ${rejected.join(', ')})`,
         })
         return
       }
@@ -111,6 +120,17 @@ export function createOAuthRouter(): Router {
     }
     const client = await resolveClient(query.client_id)
     const session = oauthStore.getSession(readCookie(req, SESSION_COOKIE))
+    const promptLogin = String(req.query.prompt || '') === 'login'
+    // Reuse the UniBoot Design web session (localStorage on ubd.*) via SSO continue,
+    // matching Atlassian-style "already signed in" consent.
+    if (!session && !promptLogin) {
+      const returnUrl = authorizeReturnUrl(query)
+      const continueUrl = new URL('/mcp/continue', getWebBase())
+      continueUrl.searchParams.set('return', returnUrl)
+      if (client?.client_name) continueUrl.searchParams.set('client', client.client_name)
+      res.redirect(continueUrl.toString())
+      return
+    }
     res.type('html').send(renderConsentPage({
       clientName: client?.client_name || 'Cursor',
       redirectUri: query.redirect_uri,
@@ -118,7 +138,51 @@ export function createOAuthRouter(): Router {
       user: session ? { name: session.name, email: session.email } : null,
       teams: session?.teams,
       scopes: parseScopes(query.scope),
+      ssoContinueUrl: !session
+        ? (() => {
+            const continueUrl = new URL('/mcp/continue', getWebBase())
+            continueUrl.searchParams.set('return', authorizeReturnUrl(query))
+            if (client?.client_name) continueUrl.searchParams.set('client', client.client_name)
+            return continueUrl.toString()
+          })()
+        : undefined,
     }))
+  })
+
+  /**
+   * Browser form-POST from ubd web `/mcp/continue` after reading localStorage JWT.
+   * Sets the MCP OAuth session cookie, then returns to /authorize (no password form).
+   */
+  router.post('/oauth/sso', async (req, res) => {
+    const accessToken = String(req.body?.accessToken || '').trim()
+    const returnUrl = String(req.body?.return || '').trim()
+    if (!accessToken || !isSafeAuthorizeReturn(returnUrl)) {
+      res.status(400).type('html').send(ssoErrorPage('无效的登录接力请求，请回到 Cursor 重试。'))
+      return
+    }
+    try {
+      const user = await fetchMe(accessToken)
+      const teams = await listTeams(accessToken)
+      const session = oauthStore.createSession({
+        accessToken,
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+        teams,
+      })
+      setCookie(res, SESSION_COOKIE, session.id)
+      res.redirect(returnUrl)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '登录态无效'
+      const loginReturn = new URL(returnUrl)
+      loginReturn.searchParams.set('prompt', 'login')
+      res.status(401).type('html').send(
+        ssoErrorPage(`${message}。请重新登录 UniBoot Design，或改用邮箱密码授权。`, {
+          retryUrl: loginReturn.toString(),
+          webLoginUrl: new URL('/login', getWebBase()).toString(),
+        }),
+      )
+    }
   })
 
   router.post('/authorize', async (req, res) => {
@@ -405,6 +469,54 @@ function readCookie(req: Request, name: string) {
 function setCookie(res: Response, name: string, value: string) {
   const secure = getIssuer().startsWith('https:')
   res.append('Set-Cookie', `${name}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}; Max-Age=1200`)
+}
+
+export function authorizeReturnUrl(query: Record<string, string>) {
+  const u = new URL('/authorize', getPublicBase())
+  for (const [k, v] of Object.entries(query)) {
+    if (v) u.searchParams.set(k, v)
+  }
+  return u.toString()
+}
+
+/** Only allow returning to this MCP host's /authorize (blocks open redirects). */
+export function isSafeAuthorizeReturn(url: string) {
+  try {
+    const target = new URL(url)
+    const base = new URL(getPublicBase())
+    return (
+      target.origin === base.origin &&
+      target.pathname === '/authorize' &&
+      !target.username &&
+      !target.password
+    )
+  } catch {
+    return false
+  }
+}
+
+function ssoErrorPage(
+  message: string,
+  links?: { retryUrl?: string; webLoginUrl?: string },
+) {
+  const retry = links?.retryUrl
+    ? `<p><a href="${escapeAttr(links.retryUrl)}">改用邮箱密码授权</a></p>`
+    : ''
+  const web = links?.webLoginUrl
+    ? `<p><a href="${escapeAttr(links.webLoginUrl)}">打开 UniBoot Design 登录</a></p>`
+    : ''
+  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8" /><title>登录接力失败</title>
+  <style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",sans-serif;padding:48px;color:#172B4D}
+  a{color:#0C66E4}</style></head><body>
+  <h1>无法使用已有登录态</h1><p>${escapeAttr(message)}</p>${retry}${web}</body></html>`
+}
+
+function escapeAttr(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }
 
 export { SESSION_COOKIE }

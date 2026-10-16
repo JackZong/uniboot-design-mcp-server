@@ -9,6 +9,11 @@ const OFFICIAL_HTTPS_HOSTS = new Set([
   'insiders.vscode.dev',
 ])
 
+/** Cursor desktop still registers this custom-scheme callback alongside loopback + https. */
+const CURSOR_NATIVE_REDIRECTS = new Set([
+  'cursor://anysphere.cursor-mcp/oauth/callback',
+])
+
 export function isAllowedRedirectUri(uri: string): boolean {
   let parsed: URL
   try {
@@ -17,6 +22,10 @@ export function isAllowedRedirectUri(uri: string): boolean {
     return false
   }
   if (parsed.username || parsed.password || parsed.hash) return false
+  // Custom scheme: compare exact URI (Cursor DCR sends a fixed deeplink).
+  if (parsed.protocol === 'cursor:') {
+    return CURSOR_NATIVE_REDIRECTS.has(uri.replace(/\/$/, ''))
+  }
   if (parsed.protocol === 'https:' && OFFICIAL_HTTPS_HOSTS.has(parsed.hostname.toLowerCase())) {
     return true
   }

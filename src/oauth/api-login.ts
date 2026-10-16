@@ -40,6 +40,13 @@ export async function loginWithPassword(email: string, password: string): Promis
   })
 }
 
+/** Validate a UniBoot Design web JWT / PAT and return the account profile. */
+export async function fetchMe(accessToken: string): Promise<LoginResult['user']> {
+  return apiJson('/auth/me', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+}
+
 export async function listTeams(accessToken: string) {
   const rows = await apiJson<Array<{ id: string; name: string }>>('/teams', {
     headers: { Authorization: `Bearer ${accessToken}` },

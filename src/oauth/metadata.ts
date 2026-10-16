@@ -22,12 +22,15 @@ export function getResourceUrl() {
 export function authorizationServerMetadata() {
   const issuer = getIssuer()
   const origin = getPublicBase()
+  // Cursor validates AS / OIDC discovery with a strict schema that requires
+  // jwks_uri + a few OIDC fields even when access tokens are opaque PATs.
   return {
     issuer,
     authorization_endpoint: `${origin}/authorize`,
     token_endpoint: `${origin}/token`,
     registration_endpoint: `${origin}/register`,
     revocation_endpoint: `${origin}/revoke`,
+    jwks_uri: `${origin}/mcp/.well-known/jwks.json`,
     scopes_supported: [...DEFAULT_SCOPES],
     response_types_supported: ['code'],
     response_modes_supported: ['query'],
@@ -35,10 +38,12 @@ export function authorizationServerMetadata() {
     token_endpoint_auth_methods_supported: ['none', 'client_secret_post'],
     code_challenge_methods_supported: ['S256'],
     revocation_endpoint_auth_methods_supported: ['none', 'client_secret_post'],
+    subject_types_supported: ['public'],
+    id_token_signing_alg_values_supported: ['RS256'],
     client_id_metadata_document_supported: true,
     authorization_response_iss_parameter_supported: true,
     resource_indicators_supported: true,
-    service_documentation: `${getWebBase()}/docs` ,
+    service_documentation: `${getWebBase()}/docs`,
   }
 }
 
