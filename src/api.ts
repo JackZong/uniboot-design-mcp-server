@@ -233,3 +233,22 @@ export function extractBearer(header: string | string[] | undefined): string {
   const m = /^Bearer\s+(.+)$/i.exec(raw.trim())
   return m?.[1]?.trim() ?? ''
 }
+
+function firstQueryValue(value: unknown): string {
+  if (typeof value === 'string') return value.trim()
+  if (Array.isArray(value) && typeof value[0] === 'string') return String(value[0]).trim()
+  return ''
+}
+
+/** Penpot-compatible: `?userToken=` (also accepts `token`). */
+export function extractQueryToken(query: Record<string, unknown> | undefined): string {
+  if (!query) return ''
+  return firstQueryValue(query.userToken) || firstQueryValue(query.token)
+}
+
+export function resolveClientToken(req: {
+  headers: { authorization?: string | string[] }
+  query?: Record<string, unknown>
+}): string {
+  return extractBearer(req.headers.authorization) || extractQueryToken(req.query)
+}

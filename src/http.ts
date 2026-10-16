@@ -7,7 +7,7 @@ import { createMcpExpressApp } from '@modelcontextprotocol/sdk/server/express.js
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
 import type { Request, Response } from 'express'
 import { createMcpServer } from './create-server.js'
-import { extractBearer, getApiBase } from './api.js'
+import { getApiBase, resolveClientToken } from './api.js'
 import { createOAuthRouter, wwwAuthenticate } from './oauth/index.js'
 import { getPublicBase } from './oauth/metadata.js'
 
@@ -35,7 +35,7 @@ export function startHttpServer() {
   const sessions = new Map<string, Session>()
 
   function resolveToken(req: Request, existing?: string): string {
-    return extractBearer(req.headers.authorization) || existing || ''
+    return resolveClientToken(req) || existing || ''
   }
 
   const oauth = createOAuthRouter()
@@ -107,7 +107,7 @@ export function startHttpServer() {
         return
       }
 
-      if (!extractBearer(req.headers.authorization)) {
+      if (!resolveClientToken(req)) {
         res.setHeader('WWW-Authenticate', wwwAuthenticate('invalid_token', 'Missing bearer token'))
         res.status(401).json({
           jsonrpc: '2.0',

@@ -47,7 +47,7 @@ export function protectedResourceMetadata() {
   return {
     resource,
     authorization_servers: [getIssuer()],
-    bearer_methods_supported: ['header'],
+    bearer_methods_supported: ['header', 'query'],
     scopes_supported: [...DEFAULT_SCOPES],
     resource_name: 'UniBoot Design MCP',
     resource_documentation: getWebBase(),

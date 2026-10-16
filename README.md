@@ -2,7 +2,8 @@
 
 Official remote MCP server for UniBoot Design. It gives Cursor and other AI tools secure, real-time access to design files, artboards, tokens, PRDs, and design-to-code workflows.
 
-- **Auth:** OAuth 2.1
+- **Auth:** OAuth 2.1, or `?userToken=<PAT>` (Penpot-compatible)
+- **Public URL:** `https://mcp.ubd.paxcq.com/mcp`
 - **Hosting:** UniBoot Cloud
 - **Transport:** Streamable HTTP
 
@@ -51,7 +52,7 @@ Pick your AI client below to install the official UniBoot Design MCP Server. Eac
   </tr>
 </table>
 
-After install, sign in when the client starts the UniBoot Design authorization flow. No API tokens to paste.
+After install, sign in when the client starts the UniBoot Design authorization flow. To skip OAuth, put a Personal Access Token in the URL (`?userToken=`), the same way as Penpot. Do not add `headers.Authorization` in Cursor `mcp.json`.
 
 ### Let your agent do the setup
 
@@ -70,7 +71,7 @@ Or add it with your client's own command:
 | Codex | `codex mcp add uniboot-design --url https://mcp.ubd.paxcq.com/mcp` |
 | Any other MCP client | Server URL `https://mcp.ubd.paxcq.com/mcp` |
 
-Manual `mcp.json`:
+Manual `mcp.json` (OAuth):
 
 ```json
 {
@@ -82,15 +83,28 @@ Manual `mcp.json`:
 }
 ```
 
+Skip OAuth with a Personal Access Token in the URL (same shape as Penpot `userToken`):
+
+```json
+{
+  "mcpServers": {
+    "uniboot-design": {
+      "url": "https://mcp.ubd.paxcq.com/mcp?userToken=ubd_pat_…"
+    }
+  }
+}
+```
+
 Cursor discovers OAuth 2.1 (PKCE + Dynamic Client Registration) from the remote server.
 
 ## Authorization
 
 1. The client connects to `https://mcp.ubd.paxcq.com/mcp`. Requests without a token receive **401** plus `WWW-Authenticate` (RFC 9728).
-2. The client reads `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server`.
-3. The browser opens `/authorize`. The user signs in, picks a team, selects Read / Write / Search, and accepts.
-4. The client is redirected to its OAuth callback (Cursor desktop uses `http://localhost:8787/callback`).
-5. Tool calls run with that user's existing UniBoot Design permissions.
+2. Token sources (first match wins): `Authorization: Bearer <PAT>`, then query `userToken`, then `token` (Penpot-compatible). Cursor clients should use OAuth or `?userToken=`, not `headers`.
+3. Without a token, the client reads `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server`.
+4. The browser opens `/authorize`. The user signs in, picks a team, selects Read / Write / Search, and accepts.
+5. The client is redirected to its OAuth callback (Cursor desktop uses `http://localhost:8787/callback`).
+6. Tool calls run with that user's existing UniBoot Design permissions.
 
 ## Repository layout
 
@@ -111,6 +125,8 @@ npm run dev          # http://localhost:8070/mcp
 ```
 
 Health check: `curl -s http://localhost:8070/health`
+
+Local Cursor URL: `http://localhost:8070/mcp` (OAuth) or `http://localhost:8070/mcp?userToken=ubd_pat_…`.
 
 OAuth discovery:
 

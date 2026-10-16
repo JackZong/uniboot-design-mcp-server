@@ -1,6 +1,6 @@
 # UniBoot Design MCP skills
 
-These skills target the remote MCP endpoint `https://mcp.ubd.paxcq.com/mcp`. Cursor / Agent Plugins discover them from `skills/<name>/SKILL.md`.
+These skills target the remote MCP endpoint `https://mcp.ubd.paxcq.com/mcp` (OAuth, or `?userToken=`). Cursor / Agent Plugins discover them from `skills/<name>/SKILL.md`.
 
 | Skill | When to use |
 | --- | --- |
